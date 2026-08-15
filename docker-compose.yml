@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tap-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tap
+      POSTGRES_PASSWORD: tap
+      POSTGRES_DB: telegram_ai_poster
+    ports:
+      - '5432:5432'
+    volumes:
+      - tap-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U tap -d telegram_ai_poster']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: tap-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - tap-redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  tap-postgres-data:
+  tap-redis-data:

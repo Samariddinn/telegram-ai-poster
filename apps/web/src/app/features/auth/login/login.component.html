@@ -1,0 +1,70 @@
+<div class="min-h-screen flex items-center justify-center bg-slate-950 px-4">
+  <div class="w-full max-w-sm rounded-xl border border-slate-800 bg-slate-900 p-8 shadow-xl">
+    <h1 class="text-xl font-semibold text-slate-100">
+      {{ mode() === 'login' ? 'Sign in' : 'Create account' }}
+    </h1>
+    <p class="mt-1 text-sm text-slate-400">Telegram AI Poster</p>
+
+    <form class="mt-6 space-y-4" (ngSubmit)="submit()">
+      <div>
+        <label class="block text-sm font-medium text-slate-300" for="username">Username</label>
+        <input
+          id="username"
+          name="username"
+          type="text"
+          autocomplete="username"
+          required
+          class="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 focus:border-indigo-500 focus:outline-none"
+          [(ngModel)]="username"
+        />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-slate-300" for="password">Password</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          autocomplete="current-password"
+          required
+          class="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 focus:border-indigo-500 focus:outline-none"
+          [(ngModel)]="password"
+        />
+      </div>
+
+      @if (mode() === 'register') {
+        <div>
+          <label class="block text-sm font-medium text-slate-300" for="inviteCode">Invite code</label>
+          <input
+            id="inviteCode"
+            name="inviteCode"
+            type="text"
+            required
+            class="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 focus:border-indigo-500 focus:outline-none"
+            [(ngModel)]="inviteCode"
+          />
+        </div>
+      }
+
+      @if (error()) {
+        <p class="text-sm text-red-400">{{ error() }}</p>
+      }
+
+      <button
+        type="submit"
+        [disabled]="loading()"
+        class="w-full rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+      >
+        {{ loading() ? 'Please wait…' : mode() === 'login' ? 'Sign in' : 'Create account' }}
+      </button>
+    </form>
+
+    <button
+      type="button"
+      class="mt-4 text-sm text-slate-400 hover:text-slate-200"
+      (click)="toggleMode()"
+    >
+      {{ mode() === 'login' ? "Have an invite code? Register" : 'Already have an account? Sign in' }}
+    </button>
+  </div>
+</div>

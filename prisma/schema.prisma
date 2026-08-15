@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────────────────────────
+
+enum CredentialType {
+  TELEGRAM_BOT_TOKEN
+  LLM_API_KEY
+}
+
+enum LlmProvider {
+  OPENAI
+  ANTHROPIC
+}
+
+enum ParseMode {
+  HTML
+  MARKDOWN_V2
+}
+
+enum ExecutionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  SKIPPED
+}
+
+enum ExecutionTrigger {
+  SCHEDULED
+  MANUAL
+}
+
+enum ExecutionErrorStage {
+  LLM
+  TELEGRAM
+  INTERNAL
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Models
+// ─────────────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  credentials  Credential[]
+  destinations Destination[]
+  workflows    Workflow[]
+
+  @@map("users")
+}
+
+model Credential {
+  id     String         @id @default(uuid())
+  userId String
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type   CredentialType
+
+  // LLM_API_KEY only; null for TELEGRAM_BOT_TOKEN
+  provider LlmProvider?
+
+  label       String
+  displayHint String // last 4 chars, plaintext, display only
+
+  // AES-256-GCM at rest
+  encryptedSecret String
+  iv              String
+  authTag         String
+  keyVersion      Int    @default(1)
+
+  lastValidatedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  destinations  Destination[]
+  llmWorkflows  Workflow[]    @relation("WorkflowLlmCredential")
+
+  @@map("credentials")
+}
+
+model Destination {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  botCredentialId String
+  botCredential   Credential @relation(fields: [botCredentialId], references: [id], onDelete: Restrict)
+
+  chatId String
+  title  String
+
+  verifiedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workflows Workflow[]
+
+  // the same bot–chat pair cannot be registered twice
+  @@unique([botCredentialId, chatId])
+  @@map("destinations")
+}
+
+model Workflow {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name         String
+  systemPrompt String?
+  userPrompt   String
+
+  llmCredentialId String
+  llmCredential   Credential @relation("WorkflowLlmCredential", fields: [llmCredentialId], references: [id], onDelete: Restrict)
+  model           String
+  temperature     Float      @default(0.7)
+  maxTokens       Int        @default(500)
+
+  destinationId String
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Restrict)
+  parseMode     ParseMode   @default(HTML)
+
+  intervalMinutes Int // enforced >= 90 at app + DB level
+
+  contextWindow Int @default(5) // how many recent successful posts feed anti-repetition context
+
+  enabled     Boolean @default(false)
+  scheduleKey String? // key identifying the job in Redis/BullMQ
+
+  lastRunAt         DateTime?
+  nextRunAt          DateTime?
+  consecutiveFailures Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  executions Execution[]
+
+  // 90-minute floor is additionally enforced with a raw CHECK constraint,
+  // added via a follow-up SQL statement in the migration (see migration.sql).
+  @@map("workflows")
+}
+
+model Execution {
+  id         String           @id @default(uuid())
+  workflowId String
+  workflow   Workflow         @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  status  ExecutionStatus
+  trigger ExecutionTrigger
+
+  startedAt   DateTime  @default(now())
+  finishedAt  DateTime?
+  durationMs  Int?
+
+  generatedText     String?
+  promptTokens      Int?
+  completionTokens  Int?
+
+  telegramMessageId String?
+
+  errorStage   ExecutionErrorStage?
+  errorMessage String?
+
+  @@map("executions")
+}
