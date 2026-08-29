@@ -1,0 +1,307 @@
+<div class="space-y-4">
+  <div class="flex items-center justify-between">
+    <div>
+      <a routerLink="/workflows" class="text-sm text-slate-400 hover:text-slate-200">← Workflows</a>
+      <h2 class="mt-1 text-lg font-semibold text-slate-100">{{ isEditing() ? 'Edit workflow' : 'New workflow' }}</h2>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <form class="space-y-4 rounded-lg border border-slate-800 bg-slate-900 p-5" (ngSubmit)="save()">
+      <div>
+        <label class="block text-sm font-medium text-slate-300" for="name">Name</label>
+        <input
+          id="name"
+          name="name"
+          type="text"
+          required
+          class="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 focus:border-indigo-500 focus:outline-none"
+          [(ngModel)]="form.name"
+        />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-slate-300" for="systemPrompt">System prompt (optional)</label>
+        <textarea
+          id="systemPrompt"
+          name="systemPrompt"
+          rows="3"
+          placeholder="Persona and rules for the model"
+          class="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 focus:border-indigo-500 focus:outline-none"
+          [(ngModel)]="form.systemPrompt"
+        ></textarea>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-slate-300" for="userPrompt">User prompt</label>
+        <textarea
+          id="userPrompt"
+          name="userPrompt"
+          rows="4"
+          required
+          placeholder="What should the model write about?"
+          class="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 focus:border-indigo-500 focus:outline-none"
+          [(ngModel)]="form.userPrompt"
+        ></textarea>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-300" for="llmCredentialId">LLM credential</label>
+          <select
+            id="llmCredentialId"
+            name="llmCredentialId"
+            required
+            class="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 focus:border-indigo-500 focus:outline-none"
+            [(ngModel)]="form.llmCredentialId"
+            (ngModelChange)="onCredentialChange()"
+          >
+            @for (credential of llmCredentials(); track credential.id) {
+              <option [value]="credential.id">{{ credential.label }} ({{ credential.provider }})</option>
+            }
+          </select>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between">
+            <label class="block text-sm font-medium text-slate-300" for="model">Model</label>
+            <button type="button" class="text-xs text-slate-400 hover:text-slate-200" (click)="toggleCustomModel()">
+              {{ customModel() ? 'Choose from list' : 'Custom…' }}
+            </button>
+          </div>
+          @if (!customModel()) {
+            <select
+              id="model"
+              name="model"
+              required
+              class="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 focus:border-indigo-500 focus:outline-none"
+              [(ngModel)]="form.model"
+            >
+              @if (modelOptions().length === 0) {
+                <option value="" disabled>Pick an LLM credential first</option>
+              }
+              @for (m of modelOptions(); track m) {
+                <option [value]="m">{{ m }}</option>
+              }
+            </select>
+          } @else {
+            <input
+              id="model"
+              name="model"
+              type="text"
+              required
+              placeholder="Exact model id as the provider expects it"
+              class="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 focus:border-indigo-500 focus:outline-none"
+              [(ngModel)]="form.model"
+            />
+          }
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-300" for="temperature">Temperature</label>
+          <input
+            id="temperature"
+            name="temperature"
+            type="number"
+            min="0"
+            max="2"
+            step="0.1"
+            class="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 focus:border-indigo-500 focus:outline-none"
+            [(ngModel)]="form.temperature"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-300" for="maxTokens">Max tokens</label>
+          <input
+            id="maxTokens"
+            name="maxTokens"
+            type="number"
+            min="1"
+            class="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 focus:border-indigo-500 focus:outline-none"
+            [(ngModel)]="form.maxTokens"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-slate-300" for="destinationId">Destination</label>
+        <select
+          id="destinationId"
+          name="destinationId"
+          required
+          class="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 focus:border-indigo-500 focus:outline-none"
+          [(ngModel)]="form.destinationId"
+        >
+          @for (destination of destinations.destinations(); track destination.id) {
+            <option [value]="destination.id">{{ destination.title }}</option>
+          }
+        </select>
+      </div>
+
+      <div>
+        <span class="block text-sm font-medium text-slate-300">Interval</span>
+        <div class="mt-1 flex flex-wrap gap-2">
+          @for (preset of intervalPresets; track preset.minutes) {
+            <button
+              type="button"
+              class="rounded-md border px-3 py-1.5 text-xs"
+              [class.border-indigo-500]="!customInterval() && form.intervalMinutes === preset.minutes"
+              [class.bg-indigo-950]="!customInterval() && form.intervalMinutes === preset.minutes"
+              [class.text-indigo-300]="!customInterval() && form.intervalMinutes === preset.minutes"
+              [class.border-slate-700]="customInterval() || form.intervalMinutes !== preset.minutes"
+              [class.text-slate-300]="customInterval() || form.intervalMinutes !== preset.minutes"
+              (click)="selectPreset(preset.minutes)"
+            >
+              {{ preset.label }}
+            </button>
+          }
+          <button
+            type="button"
+            class="rounded-md border px-3 py-1.5 text-xs"
+            [class.border-indigo-500]="customInterval()"
+            [class.bg-indigo-950]="customInterval()"
+            [class.text-indigo-300]="customInterval()"
+            [class.border-slate-700]="!customInterval()"
+            [class.text-slate-300]="!customInterval()"
+            (click)="toggleCustomInterval()"
+          >
+            Custom
+          </button>
+        </div>
+        @if (customInterval()) {
+          <input
+            type="number"
+            min="1"
+            step="1"
+            name="intervalMinutes"
+            placeholder="Minutes"
+            class="mt-2 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 focus:border-indigo-500 focus:outline-none"
+            [(ngModel)]="form.intervalMinutes"
+          />
+        }
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-slate-300" for="contextWindow">
+          Anti-repetition context window
+        </label>
+        <input
+          id="contextWindow"
+          name="contextWindow"
+          type="number"
+          min="0"
+          class="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 focus:border-indigo-500 focus:outline-none"
+          [(ngModel)]="form.contextWindow"
+        />
+        <p class="mt-1 text-xs text-slate-500">How many recent successful posts are fed back to avoid repetition.</p>
+      </div>
+
+      @if (saveError()) {
+        <p class="text-sm text-red-400">{{ saveError() }}</p>
+      }
+
+      <div class="flex items-center justify-end gap-3 pt-2">
+        <button
+          type="button"
+          class="rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-50"
+          [disabled]="previewing() || !form.llmCredentialId || !form.userPrompt || !form.model"
+          (click)="runPreview()"
+        >
+          {{ previewing() ? 'Generating…' : 'Preview' }}
+        </button>
+        @if (isEditing()) {
+          <button
+            type="button"
+            title="Generates and actually posts to the destination"
+            class="rounded-md border border-amber-800 px-3 py-2 text-sm text-amber-400 hover:bg-amber-950 disabled:opacity-50"
+            [disabled]="running()"
+            (click)="runNow()"
+          >
+            {{ running() ? 'Running…' : 'Run now' }}
+          </button>
+        }
+        <button
+          type="submit"
+          [disabled]="saving()"
+          class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+        >
+          {{ saving() ? 'Saving…' : 'Save' }}
+        </button>
+      </div>
+
+      @if (!isEditing()) {
+        <p class="text-right text-xs text-slate-500">Save the workflow first to unlock "Run now".</p>
+      }
+    </form>
+
+    <div class="rounded-lg border border-slate-800 bg-slate-900 p-5">
+      <h3 class="text-sm font-semibold text-slate-200">Preview</h3>
+      <p class="mt-1 text-xs text-slate-500">
+        Runs generation only — nothing is posted or saved to execution history.
+      </p>
+
+      @if (previewError()) {
+        <p class="mt-4 text-sm text-red-400">{{ previewError() }}</p>
+      }
+
+      @if (previewResult(); as result) {
+        <div class="mt-4 space-y-3">
+          <div class="rounded-md border border-slate-800 bg-slate-950 p-3 text-sm whitespace-pre-wrap text-slate-200">{{
+            result.sanitizedText
+          }}</div>
+          <p class="text-xs text-slate-500">
+            {{ result.promptTokens }} prompt tokens · {{ result.completionTokens }} completion tokens
+          </p>
+        </div>
+      }
+
+      @if (!previewResult() && !previewError()) {
+        <p class="mt-8 text-center text-sm text-slate-600">Click Preview to see generated output here.</p>
+      }
+    </div>
+  </div>
+
+  @if (runError() || runResult()) {
+    <div class="rounded-lg border border-slate-800 bg-slate-900 p-5">
+      <h3 class="text-sm font-semibold text-slate-200">Run now result</h3>
+
+      @if (runError()) {
+        <p class="mt-3 text-sm text-red-400">{{ runError() }}</p>
+      }
+
+      @if (runResult(); as result) {
+        <div class="mt-3 space-y-2">
+          <p class="text-sm">
+            <span
+              [class.text-emerald-400]="result.status === 'SUCCESS'"
+              [class.text-red-400]="result.status === 'FAILED'"
+              class="font-semibold"
+            >
+              {{ result.status }}
+            </span>
+            <span class="text-slate-500"> · {{ result.durationMs }}ms</span>
+            @if (result.errorStage) {
+              <span class="text-slate-500"> · failed at {{ result.errorStage }} stage</span>
+            }
+          </p>
+
+          @if (result.errorMessage) {
+            <p class="text-sm text-red-400">{{ result.errorMessage }}</p>
+          }
+
+          @if (result.generatedText) {
+            <div class="rounded-md border border-slate-800 bg-slate-950 p-3 text-sm whitespace-pre-wrap text-slate-200">{{
+              result.generatedText
+            }}</div>
+          }
+
+          @if (result.telegramMessageId) {
+            <p class="text-xs text-slate-500">Telegram message id(s): {{ result.telegramMessageId }}</p>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

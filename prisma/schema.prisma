@@ -19,6 +19,7 @@ enum CredentialType {
 enum LlmProvider {
   OPENAI
   ANTHROPIC
+  GEMINI
 }
 
 enum ParseMode {
@@ -132,7 +133,7 @@ model Workflow {
   destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Restrict)
   parseMode     ParseMode   @default(HTML)
 
-  intervalMinutes Int // enforced >= 90 at app + DB level
+  intervalMinutes Int // no product-imposed floor; must still be a positive integer
 
   contextWindow Int @default(5) // how many recent successful posts feed anti-repetition context
 
@@ -148,8 +149,6 @@ model Workflow {
 
   executions Execution[]
 
-  // 90-minute floor is additionally enforced with a raw CHECK constraint,
-  // added via a follow-up SQL statement in the migration (see migration.sql).
   @@map("workflows")
 }
 

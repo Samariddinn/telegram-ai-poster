@@ -18,6 +18,31 @@ export const appRoutes: Route[] = [
         loadComponent: () =>
           import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
       },
+      {
+        path: 'credentials',
+        loadComponent: () =>
+          import('./features/credentials/credentials.component').then((m) => m.CredentialsComponent),
+      },
+      {
+        path: 'destinations',
+        loadComponent: () =>
+          import('./features/destinations/destinations.component').then((m) => m.DestinationsComponent),
+      },
+      {
+        path: 'workflows',
+        loadComponent: () =>
+          import('./features/workflows/workflows-list.component').then((m) => m.WorkflowsListComponent),
+      },
+      {
+        path: 'workflows/new',
+        loadComponent: () =>
+          import('./features/workflows/workflow-editor.component').then((m) => m.WorkflowEditorComponent),
+      },
+      {
+        path: 'workflows/:id',
+        loadComponent: () =>
+          import('./features/workflows/workflow-editor.component').then((m) => m.WorkflowEditorComponent),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

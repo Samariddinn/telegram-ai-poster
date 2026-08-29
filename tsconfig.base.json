@@ -16,7 +16,8 @@
     "strict": false,
     "paths": {
       "@telegram-ai-poster/shared-dto": ["./libs/shared-dto/src/index.ts"],
-      "@telegram-ai-poster/prisma": ["./libs/prisma/src/index.ts"]
+      "@telegram-ai-poster/prisma": ["./libs/prisma/src/index.ts"],
+      "@telegram-ai-poster/execution": ["./libs/execution/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
