@@ -102,15 +102,23 @@
             </td>
           </tr>
         } @empty {
-          <tr>
-            <td colspan="5" class="px-4 py-8 text-center text-slate-500">
-              @if (destinations.loading()) {
-                Loading…
-              } @else {
+          @if (destinations.loading()) {
+            @for (row of [1, 2, 3]; track row) {
+              <tr>
+                @for (col of [1, 2, 3, 4, 5]; track col) {
+                  <td class="px-4 py-3">
+                    <div class="h-4 w-full max-w-32 animate-pulse rounded bg-slate-800"></div>
+                  </td>
+                }
+              </tr>
+            }
+          } @else {
+            <tr>
+              <td colspan="5" class="px-4 py-8 text-center text-slate-500">
                 No destinations yet. Add one to start posting to a real group or channel.
-              }
-            </td>
-          </tr>
+              </td>
+            </tr>
+          }
         }
       </tbody>
     </table>
@@ -214,29 +222,21 @@
           <p class="text-sm text-red-400">{{ createError() }}</p>
         }
 
-        @if (createResult(); as result) {
-          <p class="text-sm" [class.text-emerald-400]="result.valid" [class.text-red-400]="!result.valid">
-            {{ result.valid ? '✓ ' : '✗ ' }}{{ result.message }}
-          </p>
-        }
-
         <div class="flex items-center justify-end gap-3 pt-2">
           <button
             type="button"
             class="rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800"
             (click)="closeAddModal()"
           >
-            {{ createResult() ? 'Done' : 'Cancel' }}
+            Cancel
           </button>
-          @if (!createResult()) {
-            <button
-              type="submit"
-              [disabled]="submitting() || !chatId || !title || !botCredentialId"
-              class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
-            >
-              {{ submitting() ? 'Saving…' : 'Save' }}
-            </button>
-          }
+          <button
+            type="submit"
+            [disabled]="submitting() || !chatId || !title || !botCredentialId"
+            class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+          >
+            {{ submitting() ? 'Saving…' : 'Save' }}
+          </button>
         </div>
       </form>
     </div>

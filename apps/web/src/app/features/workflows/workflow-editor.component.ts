@@ -5,6 +5,7 @@ import { CredentialsService } from '../../core/services/credentials.service';
 import { DestinationsService } from '../../core/services/destinations.service';
 import { WorkflowsService } from '../../core/services/workflows.service';
 import { LlmProvider } from '../../core/models/credential.model';
+import { SkeletonBlockComponent } from '../../shared/skeleton/skeleton-block.component';
 import {
   ExecutionResult,
   INTERVAL_PRESETS,
@@ -30,7 +31,7 @@ const DEFAULT_FORM: WorkflowFormValue = {
 @Component({
   selector: 'app-workflow-editor',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, SkeletonBlockComponent],
   templateUrl: './workflow-editor.component.html',
 })
 export class WorkflowEditorComponent implements OnInit {
@@ -44,6 +45,7 @@ export class WorkflowEditorComponent implements OnInit {
   readonly llmCredentials = computed(() => this.credentials.credentials().filter((c) => c.type === 'LLM_API_KEY'));
   readonly intervalPresets = INTERVAL_PRESETS;
 
+  readonly pageLoading = signal(true);
   readonly workflowId = signal<string | null>(null);
   readonly isEditing = computed(() => this.workflowId() !== null);
 
@@ -69,24 +71,28 @@ export class WorkflowEditorComponent implements OnInit {
   form: WorkflowFormValue = { ...DEFAULT_FORM };
 
   async ngOnInit(): Promise<void> {
-    await Promise.all([this.credentials.refresh(), this.destinations.refresh()]);
+    try {
+      await Promise.all([this.credentials.refresh(), this.destinations.refresh()]);
 
-    const id = this.route.snapshot.paramMap.get('id');
-    if (!id || id === 'new') {
-      this.form = {
-        ...DEFAULT_FORM,
-        llmCredentialId: this.llmCredentials()[0]?.id ?? '',
-        destinationId: this.destinations.destinations()[0]?.id ?? '',
-      };
-      this.onCredentialChange();
-      return;
-    }
+      const id = this.route.snapshot.paramMap.get('id');
+      if (!id || id === 'new') {
+        this.form = {
+          ...DEFAULT_FORM,
+          llmCredentialId: this.llmCredentials()[0]?.id ?? '',
+          destinationId: this.destinations.destinations()[0]?.id ?? '',
+        };
+        this.onCredentialChange();
+        return;
+      }
 
-    this.workflowId.set(id);
-    await this.workflows.refresh();
-    const workflow = this.workflows.workflows().find((w) => w.id === id);
-    if (workflow) {
-      this.applyWorkflow(workflow);
+      this.workflowId.set(id);
+      await this.workflows.refresh();
+      const workflow = this.workflows.workflows().find((w) => w.id === id);
+      if (workflow) {
+        this.applyWorkflow(workflow);
+      }
+    } finally {
+      this.pageLoading.set(false);
     }
   }
 

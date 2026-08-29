@@ -8,6 +8,7 @@ import {
   LlmProvider,
 } from '../../core/models/credential.model';
 import { CredentialsService } from '../../core/services/credentials.service';
+import { ToastService } from '../../core/services/toast.service';
 
 interface RowState {
   validating: boolean;
@@ -23,11 +24,11 @@ interface RowState {
 })
 export class CredentialsComponent implements OnInit {
   readonly credentials = inject(CredentialsService);
+  private readonly toast = inject(ToastService);
 
   readonly showAddModal = signal(false);
   readonly submitting = signal(false);
   readonly createError = signal<string | null>(null);
-  readonly createResult = signal<CredentialValidationResult | null>(null);
 
   readonly rowState = signal<Record<string, RowState>>({});
 
@@ -46,7 +47,6 @@ export class CredentialsComponent implements OnInit {
     this.label = '';
     this.secret = '';
     this.createError.set(null);
-    this.createResult.set(null);
     this.showAddModal.set(true);
   }
 
@@ -56,7 +56,6 @@ export class CredentialsComponent implements OnInit {
 
   async submitAdd(): Promise<void> {
     this.createError.set(null);
-    this.createResult.set(null);
     this.submitting.set(true);
     try {
       const response = await this.credentials.create({
@@ -65,8 +64,17 @@ export class CredentialsComponent implements OnInit {
         label: this.label,
         secret: this.secret,
       });
-      this.createResult.set(response.validation);
+      // The credential is persisted regardless of validation outcome (so a bad
+      // key is a two-second fix later, not a lost form submission) — close the
+      // modal either way and use the toast to say which case happened, rather
+      // than leaving the modal open looking like the save itself failed.
       this.secret = '';
+      this.showAddModal.set(false);
+      if (response.validation.valid) {
+        this.toast.success(`"${response.credential.label}" added and validated.`);
+      } else {
+        this.toast.warning(`"${response.credential.label}" added, but validation failed: ${response.validation.message}`);
+      }
     } catch (err) {
       this.createError.set(this.extractError(err));
     } finally {

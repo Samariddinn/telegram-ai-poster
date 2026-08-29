@@ -1,0 +1,130 @@
+<div class="space-y-6">
+  <div>
+    <h2 class="text-lg font-semibold text-slate-100">
+      Welcome{{ auth.currentUser() ? ', ' + auth.currentUser()!.username : '' }}
+    </h2>
+    <p class="mt-1 text-sm text-slate-400">Here's what's happening across your workflows.</p>
+  </div>
+
+  @if (loading()) {
+    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="rounded-lg border border-slate-800 bg-slate-900 p-4">
+          <app-skeleton-block width="5rem" height="0.75rem" />
+          <div class="mt-3">
+            <app-skeleton-block width="3rem" height="1.5rem" />
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <a
+        routerLink="/credentials"
+        class="rounded-lg border border-slate-800 bg-slate-900 p-4 hover:border-slate-700"
+      >
+        <p class="text-xs uppercase tracking-wide text-slate-500">Credentials</p>
+        <p class="mt-2 text-2xl font-semibold text-slate-100">{{ credentials.credentials().length }}</p>
+      </a>
+      <a
+        routerLink="/destinations"
+        class="rounded-lg border border-slate-800 bg-slate-900 p-4 hover:border-slate-700"
+      >
+        <p class="text-xs uppercase tracking-wide text-slate-500">Destinations</p>
+        <p class="mt-2 text-2xl font-semibold text-slate-100">{{ destinations.destinations().length }}</p>
+      </a>
+      <a routerLink="/workflows" class="rounded-lg border border-slate-800 bg-slate-900 p-4 hover:border-slate-700">
+        <p class="text-xs uppercase tracking-wide text-slate-500">Workflows enabled</p>
+        <p class="mt-2 text-2xl font-semibold text-slate-100">
+          {{ enabledWorkflows().length }}
+          <span class="text-base font-normal text-slate-500">/ {{ workflows.workflows().length }}</span>
+        </p>
+      </a>
+      <div class="rounded-lg border border-slate-800 bg-slate-900 p-4">
+        <p class="text-xs uppercase tracking-wide text-slate-500">Needs attention</p>
+        <p
+          class="mt-2 text-2xl font-semibold"
+          [class.text-slate-100]="attentionItems().length === 0"
+          [class.text-amber-400]="attentionItems().length > 0"
+        >
+          {{ attentionItems().length }}
+        </p>
+      </div>
+    </div>
+  }
+
+  <div class="flex flex-wrap gap-3">
+    <a
+      routerLink="/credentials"
+      class="rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
+    >
+      + Credential
+    </a>
+    <a
+      routerLink="/destinations"
+      class="rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
+    >
+      + Destination
+    </a>
+    <a
+      routerLink="/workflows/new"
+      class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+    >
+      + Workflow
+    </a>
+  </div>
+
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div class="rounded-lg border border-slate-800 bg-slate-900 p-5">
+      <h3 class="text-sm font-semibold text-slate-200">Needs attention</h3>
+      @if (loading()) {
+        <div class="mt-3 space-y-2">
+          @for (i of [1, 2, 3]; track i) {
+            <app-skeleton-block height="1.5rem" />
+          }
+        </div>
+      } @else if (attentionItems().length === 0) {
+        <p class="mt-3 text-sm text-slate-500">Nothing needs attention right now.</p>
+      } @else {
+        <ul class="mt-3 space-y-2">
+          @for (item of attentionItems(); track item.message) {
+            <li>
+              <a
+                [routerLink]="item.link"
+                class="block rounded-md border border-amber-900 bg-amber-950/40 px-3 py-2 text-sm text-amber-300 hover:bg-amber-950/70"
+              >
+                {{ item.message }}
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+    <div class="rounded-lg border border-slate-800 bg-slate-900 p-5">
+      <h3 class="text-sm font-semibold text-slate-200">Upcoming runs</h3>
+      @if (loading()) {
+        <div class="mt-3 space-y-2">
+          @for (i of [1, 2, 3]; track i) {
+            <app-skeleton-block height="1.5rem" />
+          }
+        </div>
+      } @else if (upcomingRuns().length === 0) {
+        <p class="mt-3 text-sm text-slate-500">No enabled workflows with a scheduled run yet.</p>
+      } @else {
+        <ul class="mt-3 divide-y divide-slate-800">
+          @for (workflow of upcomingRuns(); track workflow.id) {
+            <li class="flex items-center justify-between py-2 text-sm">
+              <a [routerLink]="['/workflows', workflow.id]" class="text-slate-200 hover:text-indigo-300">
+                {{ workflow.name }}
+              </a>
+              <span class="text-slate-500">
+                {{ workflow.nextRunAt | date: 'short' }} · {{ formatInterval(workflow.intervalMinutes) }}
+              </span>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  </div>
+</div>

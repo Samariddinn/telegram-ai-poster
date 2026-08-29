@@ -5,6 +5,7 @@ import { CredentialsService } from '../../core/services/credentials.service';
 import { DestinationsService } from '../../core/services/destinations.service';
 import { WorkflowsService } from '../../core/services/workflows.service';
 import { ExecutionResult } from '../../core/models/workflow.model';
+import { formatInterval } from '../../shared/format-interval';
 
 interface RunState {
   running: boolean;
@@ -39,13 +40,7 @@ export class WorkflowsListComponent implements OnInit {
     return this.destinations.destinations().find((d) => d.id === destinationId)?.title ?? 'Unknown destination';
   }
 
-  formatInterval(minutes: number): string {
-    if (minutes % 60 === 0) {
-      const hours = minutes / 60;
-      return `${hours} hour${hours === 1 ? '' : 's'}`;
-    }
-    return `${minutes} min`;
-  }
+  readonly formatInterval = formatInterval;
 
   async toggleEnabled(id: string, currentlyEnabled: boolean): Promise<void> {
     this.toggling.update((current) => ({ ...current, [id]: true }));

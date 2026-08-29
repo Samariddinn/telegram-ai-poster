@@ -3,6 +3,7 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CredentialsService } from '../../core/services/credentials.service';
 import { DestinationsService } from '../../core/services/destinations.service';
+import { ToastService } from '../../core/services/toast.service';
 import {
   DestinationDeleteBlocker,
   DestinationValidationResult,
@@ -28,6 +29,7 @@ const EMPTY_ROW_STATE: RowState = { testing: false, result: null, deleteError: n
 export class DestinationsComponent implements OnInit {
   readonly destinations = inject(DestinationsService);
   readonly credentials = inject(CredentialsService);
+  private readonly toast = inject(ToastService);
 
   readonly botCredentials = computed(() => this.credentials.credentials().filter((c) => c.type === 'TELEGRAM_BOT_TOKEN'));
 
@@ -40,7 +42,6 @@ export class DestinationsComponent implements OnInit {
 
   readonly submitting = signal(false);
   readonly createError = signal<string | null>(null);
-  readonly createResult = signal<DestinationValidationResult | null>(null);
 
   readonly rowState = signal<Record<string, RowState>>({});
 
@@ -62,7 +63,6 @@ export class DestinationsComponent implements OnInit {
     this.selectedChatId.set(null);
     this.detectError.set(null);
     this.createError.set(null);
-    this.createResult.set(null);
     this.showAddModal.set(true);
   }
 
@@ -105,7 +105,6 @@ export class DestinationsComponent implements OnInit {
 
   async submitAdd(): Promise<void> {
     this.createError.set(null);
-    this.createResult.set(null);
     this.submitting.set(true);
     try {
       const response = await this.destinations.create({
@@ -113,7 +112,15 @@ export class DestinationsComponent implements OnInit {
         chatId: this.chatId,
         title: this.title,
       });
-      this.createResult.set(response.verification);
+      // Same reasoning as credentials: the destination is saved regardless of
+      // whether the verification send succeeds, so close the modal either way
+      // and let the toast communicate which case happened.
+      this.showAddModal.set(false);
+      if (response.verification.valid) {
+        this.toast.success(`"${response.destination.title}" added and verified.`);
+      } else {
+        this.toast.warning(`"${response.destination.title}" added, but verification failed: ${response.verification.message}`);
+      }
     } catch (err) {
       this.createError.set(this.extractError(err));
     } finally {

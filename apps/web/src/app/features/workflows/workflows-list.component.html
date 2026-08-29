@@ -99,15 +99,23 @@
             </td>
           </tr>
         } @empty {
-          <tr>
-            <td colspan="6" class="px-4 py-8 text-center text-slate-500">
-              @if (workflows.loading()) {
-                Loading…
-              } @else {
+          @if (workflows.loading()) {
+            @for (row of [1, 2, 3]; track row) {
+              <tr>
+                @for (col of [1, 2, 3, 4, 5, 6]; track col) {
+                  <td class="px-4 py-3">
+                    <div class="h-4 w-full max-w-32 animate-pulse rounded bg-slate-800"></div>
+                  </td>
+                }
+              </tr>
+            }
+          } @else {
+            <tr>
+              <td colspan="6" class="px-4 py-8 text-center text-slate-500">
                 No workflows yet. Create one to start publishing on a schedule.
-              }
-            </td>
-          </tr>
+              </td>
+            </tr>
+          }
         }
       </tbody>
     </table>
